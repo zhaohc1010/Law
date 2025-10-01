@@ -152,17 +152,17 @@ def get_company_info_from_tianyancha(company_name: str) -> dict | None:
 
     headers = {
         'Authorization': token_from_env,
-        # **修复关键点 1**：添加更多请求头，让请求更像一个真实的浏览器
+        # **最终尝试**：添加更多请求头，让请求更像一个真实的浏览器
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+        'Referer': 'https://www.tianyancha.com/'
     }
 
     try:
         response = requests.get(url, headers=headers, timeout=15)
         print(f"--- [DEBUG] Received response with status code: {response.status_code}")
 
-        # **修复关键点 2**：在解析JSON前，先检查返回的是不是HTML
         content_type = response.headers.get('Content-Type', '')
         if 'text/html' in content_type:
             print("!!! [ERROR] Server returned an HTML page instead of JSON. Request was likely blocked.")
@@ -206,7 +206,7 @@ def summarize_info_with_deepseek(company_info: dict) -> str:
         """
 
         response = client.chat.completions.create(
-            model="seek-chat",
+            model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是一位顶级的商业分析专家，严格按照用户指令生成格式化的HTML报告。"},
                 {"role": "user", "content": prompt},
