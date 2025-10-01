@@ -206,12 +206,12 @@ def summarize_info_with_deepseek(company_info: dict) -> str:
         """
 
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model="seek-chat",
             messages=[
-                {"role": "system", content": "你是一位顶级的商业分析专家，严格按照用户指令生成格式化的HTML报告。"},
-        {"role": "user", "content": prompt},
-        ],
-        stream = False
+                {"role": "system", "content": "你是一位顶级的商业分析专家，严格按照用户指令生成格式化的HTML报告。"},
+                {"role": "user", "content": prompt},
+            ],
+            stream=False
         )
         print("--- [DEBUG] Successfully received analysis from DeepSeek.")
         return response.choices[0].message.content
