@@ -150,7 +150,11 @@ def get_company_info_from_tianyancha(company_name: str) -> dict | None:
     url = f"{TIANYANCHA_API_URL}?keyword={encoded_company_name}"
     print(f"--- [DEBUG] Requesting URL: {url}")
 
-    headers = {'Authorization': token_from_env}
+    headers = {
+        'Authorization': token_from_env,
+        # 新增：伪装成一个常见的浏览器User-Agent，以绕过服务器的机器人检测
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
+    }
 
     try:
         response = requests.get(url, headers=headers, timeout=15)
