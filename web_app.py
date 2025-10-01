@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 一个集成天眼查和DeepSeek API的脚本，用于查询公司信息并生成分析报告。
-(已添加详细的调试日志功能)
+(已添加详细的调试日志功能和更强的反拦截机制)
 """
 
 import os
@@ -152,7 +152,9 @@ def get_company_info_from_tianyancha(company_name: str) -> dict | None:
 
     headers = {
         'Authorization': token_from_env,
-        # 新增：伪装成一个常见的浏览器User-Agent，以绕过服务器的机器人检测
+        # **修复关键点 1**：添加更多请求头，让请求更像一个真实的浏览器
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
     }
 
@@ -160,8 +162,11 @@ def get_company_info_from_tianyancha(company_name: str) -> dict | None:
         response = requests.get(url, headers=headers, timeout=15)
         print(f"--- [DEBUG] Received response with status code: {response.status_code}")
 
-        response_text = response.text
-        print(f"--- [DEBUG] Raw response from Tianyancha: {response_text[:500]}")  # 打印前500个字符
+        # **修复关键点 2**：在解析JSON前，先检查返回的是不是HTML
+        content_type = response.headers.get('Content-Type', '')
+        if 'text/html' in content_type:
+            print("!!! [ERROR] Server returned an HTML page instead of JSON. Request was likely blocked.")
+            return None, "请求被天眼查服务器拦截，请稍后再试或联系服务提供商。"
 
         data = response.json()
 
@@ -177,7 +182,8 @@ def get_company_info_from_tianyancha(company_name: str) -> dict | None:
         print(f"!!! [ERROR] A network error occurred during the request to Tianyancha: {e}")
         return None, "网络错误：无法连接到天眼查服务器。"
     except json.JSONDecodeError:
-        print(f"!!! [ERROR] Failed to parse JSON from Tianyancha's response.")
+        response_text = response.text
+        print(f"!!! [ERROR] Failed to parse JSON. Raw response: {response_text[:500]}")
         return None, "服务器错误：解析天眼查返回数据失败。"
 
 
@@ -202,10 +208,10 @@ def summarize_info_with_deepseek(company_info: dict) -> str:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一位顶级的商业分析专家，严格按照用户指令生成格式化的HTML报告。"},
-                {"role": "user", "content": prompt},
-            ],
-            stream=False
+                {"role": "system", content": "你是一位顶级的商业分析专家，严格按照用户指令生成格式化的HTML报告。"},
+        {"role": "user", "content": prompt},
+        ],
+        stream = False
         )
         print("--- [DEBUG] Successfully received analysis from DeepSeek.")
         return response.choices[0].message.content
